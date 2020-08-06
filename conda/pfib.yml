@@ -3,17 +3,15 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - cudatoolkit=10.1.243
-  - cudnn=7.6.5
   - ipython>=7.13.0
   - jupyterlab>=1.2.6
   - numpy>=1.18.1
   - python=3.6.10
-  - tensorflow-gpu==1.14.0
+  - tensorflow-gpu=2.2.0
   - matplotlib=3.2.2
   - pillow=7.2.0
   - pandas=1.0.5
+  - pip
   - pip:
     - tqdm>=4.45.0
-    - pydicom=2.0.0
-    - scikit-learn=0.23.1
+
