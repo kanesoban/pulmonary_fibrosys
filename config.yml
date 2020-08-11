@@ -1,0 +1,3 @@
+input_file:
+batch_size: 32
+epochs: 1
