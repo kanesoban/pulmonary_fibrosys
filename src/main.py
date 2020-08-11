@@ -4,7 +4,6 @@ from datetime import datetime
 import random
 import yaml
 
-
 from tqdm import tqdm
 import pandas as pd
 import tensorflow as tf
@@ -13,10 +12,8 @@ physical_devices = tf.config.list_physical_devices('GPU')
 for gpu_instance in physical_devices:
     tf.config.experimental.set_memory_growth(gpu_instance, True)
 
-from tensorflow.python.framework.ops import disable_eager_execution
-#disable_eager_execution()
-
 from metrics import laplace_log_likelihood
+from losses import laplace_log_likelihood_loss
 
 
 def parse_args():
@@ -42,17 +39,21 @@ def main():
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     callbacks = [tensorboard_callback]
 
-    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset, callbacks=callbacks)
+    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset)
 
 
 def get_model():
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(units=1)
-    ])
+    inputs = tf.keras.Input(shape=(3,))
+    prediction_output = tf.keras.layers.Dense(1)(inputs)
+    uncertainty_output = tf.keras.layers.Dense(1, activation='sigmoid')(inputs)
+
+    outputs = tf.keras.layers.concatenate([prediction_output, uncertainty_output])
 
     metrics = [laplace_log_likelihood]
 
-    model.compile(loss=tf.losses.MeanSquaredError(), optimizer=tf.optimizers.Adam(), metrics=metrics)
+    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
+    model.compile(loss=laplace_log_likelihood_loss, optimizer=tf.optimizers.Adam(), metrics=metrics)
     return model
 
 
