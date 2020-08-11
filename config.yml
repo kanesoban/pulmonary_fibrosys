@@ -1,3 +1,4 @@
-input_file:
+input_file: /home/cszsolnai/data/osic-pulmonary-fibrosis-progression/train.csv
+log_dir: /home/cszsolnai/Projects/pulmonary_fibrosys/logs
 batch_size: 32
-epochs: 1
+epochs: 10

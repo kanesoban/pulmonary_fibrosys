@@ -1,17 +1,20 @@
 import argparse
 import os
+from datetime import datetime
 import random
+import yaml
 
-import numpy as np
+
 from tqdm import tqdm
 import pandas as pd
 import tensorflow as tf
-tf.compat.v1.reset_default_graph()
+
+physical_devices = tf.config.list_physical_devices('GPU')
+for gpu_instance in physical_devices:
+    tf.config.experimental.set_memory_growth(gpu_instance, True)
 
 from tensorflow.python.framework.ops import disable_eager_execution
-disable_eager_execution()
-
-import yaml
+#disable_eager_execution()
 
 from metrics import laplace_log_likelihood
 
@@ -34,7 +37,12 @@ def main():
 
     model = get_model()
 
-    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset)
+    log_dir = os.path.join(config['log_dir'], datetime.now().strftime("%Y%m%d-%H%M%S"))
+    os.makedirs(log_dir, exist_ok=True)
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    callbacks = [tensorboard_callback]
+
+    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset, callbacks=callbacks)
 
 
 def get_model():
