@@ -4,6 +4,8 @@ from datetime import datetime
 import random
 import yaml
 
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
@@ -47,7 +49,7 @@ def main():
 
 
 def get_model():
-    inputs = tf.keras.Input(shape=(5,))
+    inputs = tf.keras.Input(shape=(11,))
     prediction_output = tf.keras.layers.Dense(1)(inputs)
     uncertainty_output = tf.keras.layers.Dense(1, activation='sigmoid')(inputs)
 
@@ -67,6 +69,14 @@ def get_data(input_file, batch_size):
     max_FVC = train_data['FVC'].max()
     train_data['FVC'] /= max_FVC
     train_data['Percent'] /= train_data['Percent'].max()
+    train_data['Age'] /= train_data['Age'].max()
+    sex_df = pd.get_dummies(train_data['Sex'])
+    train_data['Female'] = sex_df['Female']
+    train_data['Male'] = sex_df['Male']
+    smoking_df = pd.get_dummies(train_data['SmokingStatus'])
+    train_data['Ex-smoker'] = smoking_df['Ex-smoker']
+    train_data['Never smoked'] = smoking_df['Never smoked']
+    train_data['Currently smokes'] = smoking_df['Currently smokes']
 
     grouped = train_data.groupby(train_data.Patient)
     patient_dfs = []
@@ -89,10 +99,17 @@ def get_data(input_file, batch_size):
         Weeks_next /= (MAX_WEEK - MIN_WEEK)
         Weeks_next = Weeks_next.tolist()
         percent = patient_df['Percent'].iloc[:-1].tolist()
+        age = patient_df['Age'].iloc[:-1].tolist()
+        female = patient_df['Female'].iloc[:-1].tolist()
+        male = patient_df['Male'].iloc[:-1].tolist()
+        ex_smoker = patient_df['Ex-smoker'].iloc[:-1].tolist()
+        never_smoked = patient_df['Never smoked'].iloc[:-1].tolist()
+        currently_smokes = patient_df['Currently smokes'].iloc[:-1].tolist()
 
         converted_data = {'FVC': FVC, 'FVC_next': FVC_next,
                           'week_diff': week_diff, 'Weeks': Weeks, 'Weeks_next': Weeks_next,
-                          'Percent': percent}
+                          'Percent': percent, 'Age': age, 'Female': female, 'Male': male, 'Ex-smoker': ex_smoker,
+                          'Never smoked': never_smoked, 'Currently smokes': currently_smokes}
         converted_df = pd.DataFrame.from_dict(converted_data)
 
         patient_dfs.append(converted_df)
@@ -104,7 +121,8 @@ def get_data(input_file, batch_size):
     split = int(num_data * 0.8)
     training_data = data.iloc[:split]
     val_data = data.iloc[split:]
-    input_columns = ['Weeks', 'FVC', 'Weeks_next', 'week_diff', 'Percent']
+    input_columns = ['Weeks', 'FVC', 'Weeks_next', 'week_diff', 'Percent', 'Age', 'Female', 'Male', 'Ex-smoker',
+                     'Never smoked', 'Currently smokes']
     target_column = ['FVC_next']
     train_dataset = (
         tf.data.Dataset.from_tensor_slices(

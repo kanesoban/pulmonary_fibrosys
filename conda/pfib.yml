@@ -12,6 +12,7 @@ dependencies:
   - pillow=7.2.0
   - pandas=1.0.5
   - yaml=0.2.5
+  - scikit-learn=0.23.1
   - pip
   - pip:
     - tqdm>=4.45.0
