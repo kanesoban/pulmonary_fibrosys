@@ -16,6 +16,9 @@ for gpu_instance in physical_devices:
 from metrics import laplace_log_likelihood
 from losses import laplace_log_likelihood_loss
 
+MIN_WEEK = -12
+MAX_WEEK = 133
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -44,7 +47,7 @@ def main():
 
 
 def get_model():
-    inputs = tf.keras.Input(shape=(4,))
+    inputs = tf.keras.Input(shape=(5,))
     prediction_output = tf.keras.layers.Dense(1)(inputs)
     uncertainty_output = tf.keras.layers.Dense(1, activation='sigmoid')(inputs)
 
@@ -63,25 +66,33 @@ def get_data(input_file, batch_size):
     train_data['Weeks'] = train_data['Weeks']
     max_FVC = train_data['FVC'].max()
     train_data['FVC'] /= max_FVC
+    train_data['Percent'] /= train_data['Percent'].max()
+
     grouped = train_data.groupby(train_data.Patient)
     patient_dfs = []
     for patient in tqdm(train_data['Patient']):
         patient_df = grouped.get_group(patient)
 
-        FVC_next = patient_df['FVC'].iloc[1:]
+        FVC = patient_df['FVC'].iloc[:-1].tolist()
+        FVC_next = patient_df['FVC'].iloc[1:].tolist()
 
         # This will only work until i am not using
         weeks = patient_df['Weeks']
 
         Weeks = weeks.iloc[:-1]
         Weeks_next = weeks.iloc[1:]
-        week_diff = (np.array(Weeks_next.tolist()) - np.array(Weeks.tolist())) / 145
-        Weeks += 12
-        Weeks /= 145
-        Weeks_next += 12
-        Weeks_next /= 145
+        week_diff = (np.array(Weeks_next.tolist()) - np.array(Weeks.tolist())) / (MAX_WEEK - MIN_WEEK)
+        Weeks -= MIN_WEEK
+        Weeks /= (MAX_WEEK - MIN_WEEK)
+        Weeks = Weeks.tolist()
+        Weeks_next -= MIN_WEEK
+        Weeks_next /= (MAX_WEEK - MIN_WEEK)
+        Weeks_next = Weeks_next.tolist()
+        percent = patient_df['Percent'].iloc[:-1].tolist()
 
-        converted_data = {'FVC': patient_df['FVC'].iloc[:-1].tolist(), 'FVC_next': FVC_next.tolist(), 'week_diff': week_diff, 'Weeks': Weeks.tolist(), 'Weeks_next': Weeks_next.tolist()}
+        converted_data = {'FVC': FVC, 'FVC_next': FVC_next,
+                          'week_diff': week_diff, 'Weeks': Weeks, 'Weeks_next': Weeks_next,
+                          'Percent': percent}
         converted_df = pd.DataFrame.from_dict(converted_data)
 
         patient_dfs.append(converted_df)
@@ -93,7 +104,7 @@ def get_data(input_file, batch_size):
     split = int(num_data * 0.8)
     training_data = data.iloc[:split]
     val_data = data.iloc[split:]
-    input_columns = ['Weeks', 'FVC', 'Weeks_next', 'week_diff']
+    input_columns = ['Weeks', 'FVC', 'Weeks_next', 'week_diff', 'Percent']
     target_column = ['FVC_next']
     train_dataset = (
         tf.data.Dataset.from_tensor_slices(
