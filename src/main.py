@@ -4,6 +4,7 @@ from datetime import datetime
 import random
 import yaml
 
+import numpy as np
 from tqdm import tqdm
 import pandas as pd
 import tensorflow as tf
@@ -43,7 +44,7 @@ def main():
 
 
 def get_model():
-    inputs = tf.keras.Input(shape=(3,))
+    inputs = tf.keras.Input(shape=(4,))
     prediction_output = tf.keras.layers.Dense(1)(inputs)
     uncertainty_output = tf.keras.layers.Dense(1, activation='sigmoid')(inputs)
 
@@ -59,10 +60,7 @@ def get_model():
 
 def get_data(input_file, batch_size):
     train_data = pd.read_csv(input_file)
-    min_week = train_data['Weeks'].min()
-    train_data['Weeks'] = train_data['Weeks'] - min_week
-    max_week = train_data['Weeks'].max()
-    train_data['Weeks'] /= max_week
+    train_data['Weeks'] = train_data['Weeks']
     max_FVC = train_data['FVC'].max()
     train_data['FVC'] /= max_FVC
     grouped = train_data.groupby(train_data.Patient)
@@ -71,16 +69,19 @@ def get_data(input_file, batch_size):
         patient_df = grouped.get_group(patient)
 
         FVC_next = patient_df['FVC'].iloc[1:]
-        FVC_next = FVC_next.to_list()
 
         # This will only work until i am not using
         weeks = patient_df['Weeks']
 
+        Weeks = weeks.iloc[:-1]
         Weeks_next = weeks.iloc[1:]
-        Weeks_next = Weeks_next.to_list()
+        week_diff = (np.array(Weeks_next.tolist()) - np.array(Weeks.tolist())) / 145
+        Weeks += 12
+        Weeks /= 145
+        Weeks_next += 12
+        Weeks_next /= 145
 
-        converted_data = {'Weeks': weeks.iloc[:-1], 'FVC': patient_df['FVC'].iloc[:-1], 'FVC_next': FVC_next,
-                          'Weeks_next': Weeks_next}
+        converted_data = {'FVC': patient_df['FVC'].iloc[:-1].tolist(), 'FVC_next': FVC_next.tolist(), 'week_diff': week_diff, 'Weeks': Weeks.tolist(), 'Weeks_next': Weeks_next.tolist()}
         converted_df = pd.DataFrame.from_dict(converted_data)
 
         patient_dfs.append(converted_df)
@@ -92,7 +93,7 @@ def get_data(input_file, batch_size):
     split = int(num_data * 0.8)
     training_data = data.iloc[:split]
     val_data = data.iloc[split:]
-    input_columns = ['Weeks', 'FVC', 'Weeks_next']
+    input_columns = ['Weeks', 'FVC', 'Weeks_next', 'week_diff']
     target_column = ['FVC_next']
     train_dataset = (
         tf.data.Dataset.from_tensor_slices(
