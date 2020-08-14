@@ -31,7 +31,7 @@ def get_model():
     return model
 
 
-def get_data(input_file, batch_size):
+def get_data(input_file, batch_size, split=0.8):
     train_data = pd.read_csv(input_file)
     train_data['Weeks'] = train_data['Weeks']
     max_FVC = train_data['FVC'].max()
@@ -48,7 +48,7 @@ def get_data(input_file, batch_size):
 
     grouped = train_data.groupby(train_data.Patient)
     patient_dfs = []
-    for patient in tqdm(train_data['Patient']):
+    for patient in tqdm(train_data['Patient'].unique()):
         patient_df = grouped.get_group(patient)
 
         FVC = patient_df['FVC'].iloc[:-1].tolist()
@@ -86,7 +86,7 @@ def get_data(input_file, batch_size):
     indexes = list(range(num_data))
     random.shuffle(indexes)
     data = result.iloc[indexes]
-    split = int(num_data * 0.8)
+    split = int(num_data * split)
     training_data = data.iloc[:split]
     val_data = data.iloc[split:]
     input_columns = ['Weeks', 'FVC', 'Weeks_next', 'week_diff', 'Percent', 'Age', 'Female', 'Male', 'Ex-smoker',
