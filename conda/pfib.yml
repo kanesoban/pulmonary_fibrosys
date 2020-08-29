@@ -14,6 +14,9 @@ dependencies:
   - pandas=1.0.5
   - yaml=0.2.5
   - scikit-learn=0.23.1
+  - scikit-image=0.16.2
   - pip
   - pip:
     - tqdm>=4.45.0
+    - dicom-numpy=0.4.0
+    - pydicom=2.0.0
