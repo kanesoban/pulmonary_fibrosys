@@ -38,7 +38,7 @@ def get_combined_data(input_file, batch_size, sequence_length, scans_root, n_dep
             converted_df = pd.DataFrame.from_dict(converted_data)
             indexes = sorted(list(converted_df.index))
             patient_dir = os.path.join(scans_root, patient)
-            img = get_patient_scan(patient_dir, n_depth=n_depth, rows=rows, columns=columns)
+            img = np.expand_dims(get_patient_scan(patient_dir, n_depth=n_depth, rows=rows, columns=columns), axis=-1)
 
             for idx in indexes:
                 prev_indexes = sorted(list(range(int(idx - sequence_length), int(idx))))
@@ -49,9 +49,9 @@ def get_combined_data(input_file, batch_size, sequence_length, scans_root, n_dep
                             sequence[i] = [converted_df['FVC'].loc[prev_idx], converted_df['week_diff'].loc[prev_idx]]
                         else:
                             sequence[i] = [-1, -1]
-                    yield [sequence, img], converted_df['FVC'].loc[idx]
+                    yield ((sequence, img), converted_df['FVC'].loc[idx])
 
-    dataset = tf.data.Dataset.from_generator(gen, output_types=tf.float32).shuffle(n_data)
+    dataset = tf.data.Dataset.from_generator(gen, output_types=((tf.float32, tf.float32), tf.float32)).repeat(None).shuffle(n_data)
 
     train_size = int(split * n_data)
     train_dataset = dataset.take(train_size)

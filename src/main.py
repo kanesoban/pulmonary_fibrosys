@@ -29,7 +29,9 @@ def main():
 
     model = get_combined_model(config['sequence_length'], config['learning_rate'], config['width'], config['height'], config['depth'])
 
-    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset)
+    steps_per_epoch = 1500 // config['batch_size']
+    validation_steps = 300 // config['batch_size']
+    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset, steps_per_epoch=steps_per_epoch, validation_steps=validation_steps)
 
 
 '''

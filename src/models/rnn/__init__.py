@@ -1,3 +1,5 @@
+from functools import reduce
+
 import tensorflow as tf
 
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -12,11 +14,12 @@ import models.cnn3d as cnn3d
 def get_combined_model(sequence_length, learning_rate, width, height, depth):
     rnn_inputs = tf.keras.Input(shape=(sequence_length, 2))
     x = tf.keras.layers.Masking(mask_value=-1, input_shape=(sequence_length, 1))(rnn_inputs)
-    rnn_out = tf.keras.layers.GRU(4)(x)
-    rnn_out = tf.keras.layers.Reshape((-1,))(rnn_out)
+    rnn_out = 4
+    rnn_out = tf.keras.layers.GRU(rnn_out)(x)
 
     cnn3d_inputs, cnn3d_out = cnn3d.get_model(width, height, depth)
-    cnn3d_out = tf.keras.layers.Reshape((-1,))(cnn3d_out)
+    cnn3d_out_shape = reduce(lambda x, y: x*y, cnn3d_out.shape[1:])
+    cnn3d_out = tf.keras.layers.Reshape((cnn3d_out_shape,))(cnn3d_out)
 
     combined_out = tf.keras.layers.concatenate([rnn_out, cnn3d_out])
 
