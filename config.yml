@@ -1,7 +1,13 @@
-input_file:
+train_input_file:
+train_scans_root:
+test_input_file:
+test_scans_root:
 log_dir:
 data_dir:
 batch_size: 32
 epochs: 50
 sequence_length: 5
 learning_rate: 0.001
+width: 32
+height: 32
+depth: 20

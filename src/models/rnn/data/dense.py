@@ -15,13 +15,37 @@ MIN_WEEK = -12
 MAX_WEEK = 133
 
 
-def get_combined_data(input_file, batch_size, sequence_length, scans_root, n_depth, rows, columns, split=0.8):
+def get_combined_test_data(input_file, scans_root, n_depth, rows, columns, max_fvc):
+    test_data = pd.read_csv(input_file)
+    n_features = 0
+    test_data['Weeks'] = test_data['Weeks']
+    n_features += 1
+    test_data['FVC'] /= max_fvc
+    n_features += 1
+    grouped = test_data.groupby(test_data.Patient)
+
+    def gen():
+        for patient in tqdm(test_data['Patient'].unique()):
+            patient_df = grouped.get_group(patient)
+            FVC = patient_df['FVC'].iloc[:1].tolist()
+            week_diff = np.nan
+            converted_data = {'FVC': FVC, 'week_diff': week_diff}
+            converted_df = pd.DataFrame.from_dict(converted_data)
+            patient_dir = os.path.join(scans_root, patient)
+            img = np.expand_dims(get_patient_scan(patient_dir, n_depth=n_depth, rows=rows, columns=columns), axis=-1)
+            sequence = np.empty((1, n_features))
+            sequence[0] = [converted_df['FVC'].loc[0], converted_df['week_diff'].loc[0]]
+            yield (sequence, img)
+
+    return tf.data.Dataset.from_generator(gen, output_types=((tf.float32, tf.float32), tf.float32))
+
+
+def get_combined_data(input_file, batch_size, sequence_length, scans_root, n_depth, rows, columns, max_fvc, split=0.8):
     train_data = pd.read_csv(input_file)
     n_features = 0
     train_data['Weeks'] = train_data['Weeks']
     n_features += 1
-    max_FVC = train_data['FVC'].max()
-    train_data['FVC'] /= max_FVC
+    train_data['FVC'] /= max_fvc
     n_features += 1
     grouped = train_data.groupby(train_data.Patient)
     n_data = len(train_data)
