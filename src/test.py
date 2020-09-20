@@ -12,7 +12,7 @@ for gpu_instance in physical_devices:
     tf.config.experimental.set_memory_growth(gpu_instance, True)
 
 from utils import get_patient_scan
-from models.rnn.data.dense import get_combined_test_data, get_combined_data, MIN_WEEK, MAX_WEEK
+from models.rnn.data.dense import MIN_WEEK, MAX_WEEK
 from models.rnn.losses import laplace_log_likelihood_loss
 from models.rnn.metrics import laplace_log_likelihood
 
@@ -69,6 +69,17 @@ def main():
             prediction_data['Patient_Week'].append(patient + '_' + str(week))
             prediction_data['FVC'].append(int(FVC))
             prediction_data['Confidence'].append(confidence)
+
+    indexes = list(range(len(prediction_data['Patient_Week'])))
+
+    def get_key(patient_week):
+        patient, week = patient_week.split('_')
+        return int(week)
+
+    sorted_data = sorted(zip(indexes, prediction_data['Patient_Week'], prediction_data['FVC'], prediction_data['Confidence']), key=lambda e: get_key(e[1]))
+    prediction_data['Patient_Week'] = [e[1] for e in sorted_data]
+    prediction_data['FVC'] = [e[2] for e in sorted_data]
+    prediction_data['Confidence'] = [e[3] for e in sorted_data]
 
     df = pd.DataFrame.from_dict(prediction_data)
     df.to_csv("prediction.csv")
