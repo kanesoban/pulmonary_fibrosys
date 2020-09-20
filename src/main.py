@@ -28,15 +28,17 @@ def main():
 
     MAX_FVC = 4000
 
-    #test_dataset = get_combined_test_data(config['test_input_file'], config['test_scans_root'], config['depth'], config['height'], config['width'], max_fvc=MAX_FVC)
+    train_dataset, val_dataset = get_combined_data(config['train_input_file'], config['batch_size'],
+                                                   config['sequence_length'], config['train_scans_root'],
+                                                   config['depth'], config['height'], config['width'], max_fvc=MAX_FVC)
 
-    train_dataset, val_dataset = get_combined_data(config['train_input_file'], config['batch_size'], config['sequence_length'], config['train_scans_root'], config['depth'], config['height'], config['width'], max_fvc=MAX_FVC)
-
-    model = get_combined_model(config['sequence_length'], config['learning_rate'], config['width'], config['height'], config['depth'])
+    model = get_combined_model(config['sequence_length'], config['learning_rate'], config['width'], config['height'],
+                               config['depth'])
 
     steps_per_epoch = 1500 // config['batch_size']
     validation_steps = 300 // config['batch_size']
-    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset, steps_per_epoch=steps_per_epoch, validation_steps=validation_steps)
+    model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset, steps_per_epoch=steps_per_epoch,
+              validation_steps=validation_steps)
     model.save(config['model_save_path'], save_format='h5')
 
 
@@ -49,7 +51,6 @@ callbacks = [tensorboard_callback]
 
 model.fit(train_dataset, epochs=config['epochs'], validation_data=val_dataset)
 '''
-
 
 if __name__ == "__main__":
     main()

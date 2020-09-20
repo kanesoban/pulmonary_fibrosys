@@ -58,16 +58,17 @@ def main():
         sequence = np.empty((1, n_features))
 
         prediction_data['Patient_Week'].append(patient + '_' + str(measurement_week))
-        prediction_data['FVC'].append(int(FVC[0]))
-        prediction_data['Confidence'].append(1.0)
+        prediction_data['FVC'].append(int(FVC[0] * MAX_FVC))
+        prediction_data['Confidence'].append(100)
 
         for week, week_diff in zip(prediction_weeks, week_diffs):
             data = get_input_data(FVC, img, sequence, week_diff)
             prediction = model.predict([data])
             FVC = prediction[0][0]
-            confidence = prediction[0][1]
+            uncertainty = prediction[0][1]
             prediction_data['Patient_Week'].append(patient + '_' + str(week))
-            prediction_data['FVC'].append(int(FVC))
+            prediction_data['FVC'].append(int(FVC * MAX_FVC))
+            confidence = 1/(uncertainty+1) * 100.0
             prediction_data['Confidence'].append(confidence)
 
     indexes = list(range(len(prediction_data['Patient_Week'])))
